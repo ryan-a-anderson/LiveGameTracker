@@ -78,9 +78,9 @@ def main():
                 if st.button(f"Subscribe 🔔", key=f"subscribe_{idx}"):
                     st.info("Subscriptions are currently disabled")
 
-    # Auto-refresh every 30 seconds (reduced from 5 minutes for testing)
+    # Auto-refresh every 30 seconds
     time.sleep(30)
-    st.experimental_rerun()
+    st.rerun()
 
 if __name__ == "__main__":
     main()
