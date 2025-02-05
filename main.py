@@ -5,6 +5,13 @@ import pandas as pd
 from utils.sports_data import get_live_games
 from utils.ai_summary import generate_game_summary
 from utils.notifications import subscribe_to_updates
+from utils.stats import (
+    generate_team_stats,
+    create_possession_chart,
+    create_shots_comparison,
+    create_score_timeline,
+    create_pass_accuracy_gauge
+)
 
 # Page configuration
 st.set_page_config(
@@ -95,6 +102,67 @@ def main():
                             """)
                             # In production, this would be a real video player
                             st.info("Video player placeholder - In production, this would show the actual highlight video")
+
+                # Advanced Statistics Section
+                st.subheader("📊 Advanced Statistics")
+
+                # Generate mock statistics
+                stats = generate_team_stats(game)
+
+                # Create tabs for different statistics views
+                tab1, tab2, tab3 = st.tabs(["Game Flow", "Team Comparison", "Pass Analysis"])
+
+                with tab1:
+                    # Score Timeline
+                    st.plotly_chart(create_score_timeline(game), use_container_width=True)
+
+                with tab2:
+                    # Create two columns for possession and shots
+                    stat_col1, stat_col2 = st.columns(2)
+
+                    with stat_col1:
+                        # Possession pie chart
+                        st.plotly_chart(
+                            create_possession_chart(
+                                stats, 
+                                game['home_team'], 
+                                game['away_team']
+                            ),
+                            use_container_width=True
+                        )
+
+                    with stat_col2:
+                        # Shots comparison
+                        st.plotly_chart(
+                            create_shots_comparison(
+                                stats,
+                                game['home_team'],
+                                game['away_team']
+                            ),
+                            use_container_width=True
+                        )
+
+                with tab3:
+                    # Pass accuracy gauges
+                    pass_col1, pass_col2 = st.columns(2)
+
+                    with pass_col1:
+                        st.plotly_chart(
+                            create_pass_accuracy_gauge(
+                                game['home_team'],
+                                stats['pass_accuracy'][game['home_team']]
+                            ),
+                            use_container_width=True
+                        )
+
+                    with pass_col2:
+                        st.plotly_chart(
+                            create_pass_accuracy_gauge(
+                                game['away_team'],
+                                stats['pass_accuracy'][game['away_team']]
+                            ),
+                            use_container_width=True
+                        )
 
     # Auto-refresh every 30 seconds
     time.sleep(30)
