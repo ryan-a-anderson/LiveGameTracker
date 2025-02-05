@@ -112,23 +112,87 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    /* Game card adjustments */
     .score-container {
         flex-direction: column;
         text-align: center;
-        padding: 10px;
+        padding: 15px 10px;
     }
 
     .team {
-        margin: 5px 0;
+        margin: 8px 0;
+        font-size: 1em;
     }
 
     .score {
-        margin: 10px 0;
+        margin: 12px 0;
+        padding: 8px 20px;
+        font-size: 1.8em;
+        width: 100%;
+        max-width: 200px;
     }
 
     .league-badge {
-        display: block;
-        margin: 5px auto;
-        text-align: center;
+        display: inline-block;
+        margin: 5px 5px 5px 0;
+        font-size: 0.8em;
+        padding: 4px 10px;
+    }
+
+    .status-indicator {
+        display: inline-block;
+        margin: 5px 0 5px 5px;
+        font-size: 0.8em;
+    }
+
+    /* Chart responsiveness */
+    .stPlotlyChart {
+        height: auto !important;
+        min-height: 250px;
+    }
+
+    /* Tab adjustments */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+
+    /* Button adjustments */
+    .stButton button {
+        width: 100%;
+        margin: 5px 0;
+        padding: 8px 15px;
+        font-size: 1em;
+    }
+
+    /* Summary and highlights adjustments */
+    .highlight-container {
+        padding: 12px;
+        margin: 12px 0;
+    }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 480px) {
+    .score-container {
+        padding: 12px 8px;
+    }
+
+    .team {
+        font-size: 0.9em;
+    }
+
+    .score {
+        font-size: 1.6em;
+        padding: 6px 15px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        padding: 6px 10px;
+        font-size: 0.8em;
     }
 }
