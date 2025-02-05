@@ -51,7 +51,7 @@ def main():
 
     # Display games in a grid
     for idx, game in enumerate(games):
-        with st.expander(f"**{game['league']}**: {game['home_team']} vs {game['away_team']} ({game['time']})", expanded=False):
+        with st.expander(f"{game['league']} - {game['home_team']} vs {game['away_team']}", expanded=False):
             # Main game info
             cols = st.columns([3, 1])
 
@@ -59,6 +59,8 @@ def main():
                 st.markdown(
                     f"""
                     <div class="score-container">
+                        <span class="league-badge league-{game['league'].split()[0]}">{game['league']}</span>
+                        <span class="status-indicator status-{game['status']}">{game['status']}</span>
                         <span class="team">{game['home_team']}</span>
                         <span class="score">{game['home_score']} - {game['away_score']}</span>
                         <span class="team">{game['away_team']}</span>
@@ -72,7 +74,13 @@ def main():
                     st.info("Subscriptions are currently disabled")
 
             # Game Summary Section
-            if st.button("Show Game Summary", key=f"summary_{idx}"):
+            if 'show_summary_' + str(idx) not in st.session_state:
+                st.session_state['show_summary_' + str(idx)] = False
+
+            if st.button("Show Game Summary", key=f"summary_btn_{idx}"):
+                st.session_state['show_summary_' + str(idx)] = not st.session_state['show_summary_' + str(idx)]
+
+            if st.session_state['show_summary_' + str(idx)]:
                 summary = generate_game_summary(game)
                 st.markdown(summary)
 
