@@ -26,10 +26,10 @@ def generate_team_stats(game):
             game['away_team']: random.randint(70, 90)
         }
     }
-    
+
     # Calculate complement for possession
     stats['possession'][game['away_team']] = 100 - stats['possession'][game['home_team']]
-    
+
     return stats
 
 def create_possession_chart(stats, home_team, away_team):
@@ -50,7 +50,7 @@ def create_shots_comparison(stats, home_team, away_team):
     Create a bar chart comparing shots and shots on target
     """
     categories = ['Total Shots', 'Shots on Target']
-    
+
     fig = go.Figure(data=[
         go.Bar(name=home_team, 
                x=categories,
@@ -63,7 +63,7 @@ def create_shots_comparison(stats, home_team, away_team):
                   stats['shots_on_target'][away_team]],
                marker_color='#e74c3c')
     ])
-    
+
     fig.update_layout(
         title="Shot Analysis",
         barmode='group',
@@ -80,50 +80,58 @@ def create_score_timeline(game):
     minutes = list(range(0, int((datetime.now() - 
         (datetime.strptime(game['time'], '%H:%M') - 
          timedelta(minutes=90))).total_seconds() / 60)))
-    
-    home_scores = [0]
-    away_scores = [0]
+
+    # Initialize timeline data
+    timeline_data = {
+        'minute': [0],
+        f"{game['home_team']}_score": [0],
+        f"{game['away_team']}_score": [0]
+    }
+
     current_home = 0
     current_away = 0
-    
+
     # Generate random scoring events
     for _ in range(game['home_score'] + game['away_score']):
-        minute = random.choice(minutes)
+        minute = random.choice(minutes[1:])  # Exclude minute 0
         if random.random() < 0.5 and current_home < game['home_score']:
             current_home += 1
-            home_scores.append((minute, current_home))
+            timeline_data['minute'].append(minute)
+            timeline_data[f"{game['home_team']}_score"].append(current_home)
+            timeline_data[f"{game['away_team']}_score"].append(current_away)
         elif current_away < game['away_score']:
             current_away += 1
-            away_scores.append((minute, current_away))
-    
-    # Sort by minute
-    home_scores.sort()
-    away_scores.sort()
-    
+            timeline_data['minute'].append(minute)
+            timeline_data[f"{game['home_team']}_score"].append(current_home)
+            timeline_data[f"{game['away_team']}_score"].append(current_away)
+
+    # Convert to DataFrame and sort by minute
+    df = pd.DataFrame(timeline_data).sort_values('minute')
+
     # Create the line chart
     fig = go.Figure()
-    
+
     fig.add_trace(go.Scatter(
-        x=[score[0] for score in home_scores],
-        y=[score[1] for score in home_scores],
+        x=df['minute'],
+        y=df[f"{game['home_team']}_score"],
         name=game['home_team'],
         line=dict(color="#2ecc71", width=2)
     ))
-    
+
     fig.add_trace(go.Scatter(
-        x=[score[0] for score in away_scores],
-        y=[score[1] for score in away_scores],
+        x=df['minute'],
+        y=df[f"{game['away_team']}_score"],
         name=game['away_team'],
         line=dict(color="#e74c3c", width=2)
     ))
-    
+
     fig.update_layout(
         title="Score Progression",
         xaxis_title="Match Time (minutes)",
         yaxis_title="Goals",
         hovermode="x unified"
     )
-    
+
     return fig
 
 def create_pass_accuracy_gauge(team, accuracy):
@@ -145,5 +153,5 @@ def create_pass_accuracy_gauge(team, accuracy):
             ]
         }
     ))
-    
+
     return fig
