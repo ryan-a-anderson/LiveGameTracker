@@ -51,14 +51,11 @@ def main():
 
     # Display games in a grid
     for idx, game in enumerate(games):
-        with st.container():
-            col1, col2, col3 = st.columns([2,3,1])
+        with st.expander(f"**{game['league']}**: {game['home_team']} vs {game['away_team']} ({game['time']})", expanded=False):
+            # Main game info
+            cols = st.columns([3, 1])
 
-            with col1:
-                st.markdown(f"**{game['league']}**")
-                st.text(f"🕒 {game['time']}")
-
-            with col2:
+            with cols[0]:
                 st.markdown(
                     f"""
                     <div class="score-container">
@@ -70,13 +67,26 @@ def main():
                     unsafe_allow_html=True
                 )
 
-            with col3:
-                if st.button(f"Get Summary", key=f"summary_{idx}"):
-                    summary = generate_game_summary(game)
-                    st.markdown(summary)
-
+            with cols[1]:
                 if st.button(f"Subscribe 🔔", key=f"subscribe_{idx}"):
                     st.info("Subscriptions are currently disabled")
+
+            # Game Summary Section
+            if st.button("Show Game Summary", key=f"summary_{idx}"):
+                summary = generate_game_summary(game)
+                st.markdown(summary)
+
+                # Display highlight videos if available
+                if game.get('highlights'):
+                    st.subheader("🎥 Game Highlights")
+                    for highlight in game['highlights']:
+                        with st.container():
+                            st.markdown(f"""
+                            🕒 {highlight['timestamp']} - **{highlight['title']}**  
+                            _{highlight['description']}_
+                            """)
+                            # In production, this would be a real video player
+                            st.info("Video player placeholder - In production, this would show the actual highlight video")
 
     # Auto-refresh every 30 seconds
     time.sleep(30)
