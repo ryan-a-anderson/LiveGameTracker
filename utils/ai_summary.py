@@ -1,4 +1,3 @@
-import json
 import random
 
 def generate_game_summary(game):
@@ -25,4 +24,22 @@ def generate_game_summary(game):
         }
     ]
 
-    return json.dumps(random.choice(summaries), indent=2)
+    selected = random.choice(summaries)
+
+    # Format the summary in a readable way
+    formatted_summary = f"""
+📊 Game Summary
+---------------
+{selected['summary']}
+
+🎯 Key Highlights:
+{chr(8226)} {selected['highlights'][0]}
+{chr(8226)} {selected['highlights'][1]}
+{chr(8226)} {selected['highlights'][2]}
+
+⭐ Notable Players:
+{chr(8226)} {selected['key_players'][0]['name']}: {selected['key_players'][0]['performance']}
+{chr(8226)} {selected['key_players'][1]['name']}: {selected['key_players'][1]['performance']}
+"""
+
+    return formatted_summary

@@ -73,7 +73,7 @@ def main():
             with col3:
                 if st.button(f"Get Summary", key=f"summary_{idx}"):
                     summary = generate_game_summary(game)
-                    st.json(summary)
+                    st.markdown(summary)
 
                 if st.button(f"Subscribe 🔔", key=f"subscribe_{idx}"):
                     st.info("Subscriptions are currently disabled")
