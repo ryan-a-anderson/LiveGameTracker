@@ -1,10 +1,42 @@
 import random
 from datetime import datetime, timedelta
+from nba_api.live.nba.endpoints import scoreboard
+import json
 
-def get_live_games(selected_leagues, status_filter):
+def get_nba_live_games():
     """
-    Mock function to generate live games data.
-    In production, this would integrate with real sports APIs.
+    Fetch live NBA games using the NBA API
+    """
+    try:
+        # Get today's games
+        games_data = scoreboard.ScoreBoard()
+        games_json = json.loads(games_data.get_json())
+        nba_games = []
+
+        for game in games_json['scoreboard']['games']:
+            nba_games.append({
+                "id": game['gameId'],
+                "league": "NBA",
+                "home_team": f"{game['homeTeam']['teamCity']} {game['homeTeam']['teamName']}",
+                "away_team": f"{game['awayTeam']['teamCity']} {game['awayTeam']['teamName']}",
+                "home_score": game['homeTeam']['score'],
+                "away_score": game['awayTeam']['score'],
+                "time": game['gameStatusText'],
+                "status": "Live" if game['gameStatus'] == 2 else 
+                         "Finished" if game['gameStatus'] == 3 else "Upcoming",
+                "period": game.get('period', 0),
+                "game_clock": game.get('gameClock', ''),
+                "highlights": []  # We'll keep this empty for now as we don't have real highlights
+            })
+
+        return nba_games
+    except Exception as e:
+        print(f"Error fetching NBA games: {str(e)}")
+        return []
+
+def get_mock_games(leagues):
+    """
+    Generate mock games data for non-NBA leagues
     """
     games = []
 
@@ -14,11 +46,6 @@ def get_live_games(selected_leagues, status_filter):
             ("Kansas City Chiefs", "Las Vegas Raiders"),
             ("Buffalo Bills", "Miami Dolphins"),
             ("Green Bay Packers", "Chicago Bears")
-        ],
-        "NBA": [
-            ("Los Angeles Lakers", "Golden State Warriors"),
-            ("Boston Celtics", "Brooklyn Nets"),
-            ("Milwaukee Bucks", "Philadelphia 76ers")
         ],
         "MLB": [
             ("New York Yankees", "Boston Red Sox"),
@@ -32,7 +59,7 @@ def get_live_games(selected_leagues, status_filter):
         ]
     }
 
-    # Mock highlight videos (in production, these would be real URLs)
+    # Mock highlight videos
     highlight_videos = [
         {
             "title": "Amazing Play",
@@ -49,8 +76,11 @@ def get_live_games(selected_leagues, status_filter):
     ]
 
     game_id = 1
-    for league in selected_leagues:
-        for home, away in teams[league]:
+    for league in leagues:
+        if league == "NBA":
+            continue  # Skip NBA as we'll get real data
+
+        for home, away in teams.get(league, []):
             # Generate random scores
             home_score = random.randint(0, 5)
             away_score = random.randint(0, 5)
@@ -60,8 +90,6 @@ def get_live_games(selected_leagues, status_filter):
             game_time = current_time - timedelta(minutes=random.randint(0, 90))
 
             status = random.choice(["Live", "Upcoming", "Finished"])
-            if status_filter != "All" and status != status_filter:
-                continue
 
             games.append({
                 "id": game_id,
@@ -75,5 +103,29 @@ def get_live_games(selected_leagues, status_filter):
                 "highlights": random.sample(highlight_videos, random.randint(1, 2))
             })
             game_id += 1
+
+    return games
+
+def get_live_games(selected_leagues, status_filter):
+    """
+    Combine real NBA data with mock data for other sports
+    """
+    games = []
+
+    # Get real NBA data if NBA is selected
+    if "NBA" in selected_leagues:
+        nba_games = get_nba_live_games()
+        if status_filter != "All":
+            nba_games = [g for g in nba_games if g['status'] == status_filter]
+        games.extend(nba_games)
+
+    # Get mock data for other sports
+    mock_games = get_mock_games(selected_leagues)
+    if status_filter != "All":
+        mock_games = [g for g in mock_games if g['status'] == status_filter]
+    games.extend(mock_games)
+
+    # Sort games by time
+    games.sort(key=lambda x: x['time'])
 
     return games
