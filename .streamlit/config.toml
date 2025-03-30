@@ -17,3 +17,6 @@ gatherUsageStats = false
 
 [runner]
 fastRerenderThreshold = 1000
+
+[env]
+STREAMLIT_DEPLOYMENT = "true"

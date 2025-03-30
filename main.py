@@ -133,14 +133,18 @@ def display_game_details(game):
 def main():
     st.title("⚾ MLB Live Game Tracker")
     
-    # Create sidebar for filtering options
-    with st.sidebar:
-        st.header("Filter Options")
-        
+    # Create filter options at the top of the page
+    st.header("Filter Options")
+    
+    # Create columns for filter options
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
         # Allow user to select game status
         status_options = ["All", "Live", "Upcoming", "Finished"]
         selected_status = st.selectbox("Game Status", status_options)
-        
+    
+    with col2:
         # Allow user to select date
         today = datetime.now().date()
         yesterday = today - timedelta(days=1)
@@ -154,8 +158,10 @@ def main():
         
         selected_date_str = st.selectbox("Date", list(date_options.keys()))
         selected_date = date_options[selected_date_str]
-        
+    
+    with col3:
         # Add a refresh button
+        st.write("&nbsp;")  # Add some spacing
         if st.button("Refresh Data"):
             st.cache_data.clear()
             st.experimental_rerun()

@@ -78,6 +78,11 @@ def _is_cache_valid(cache_time: datetime) -> bool:
     """Check if cache is still valid"""
     if not cache_time:
         return False
+    
+    # Use shorter TTL in production environment
+    if os.getenv('STREAMLIT_DEPLOYMENT'):
+        return (datetime.now() - cache_time).total_seconds() < 30  # 30 seconds for deployed app
+    
     return (datetime.now() - cache_time).total_seconds() < CACHE_TTL['live_games']
 
 def _get_mlb_teams() -> Dict[str, str]:
@@ -145,28 +150,39 @@ def get_mlb_games(selected_date=None) -> List[Dict[str, Any]]:
     try:
         # Use selected date or today's date
         date_str = selected_date.strftime('%Y-%m-%d') if selected_date else datetime.now().strftime('%Y-%m-%d')
+        print(f"Fetching MLB games for date: {date_str}")
         
         # Check if we have cached data for this date
         if date_str in _mlb_schedule_cache and _is_cache_valid(_mlb_schedule_cache_time):
+            print(f"Using cached data for {date_str}")
             return _mlb_schedule_cache[date_str]
         
         # Get team IDs from cache
         team_id_map = _get_mlb_teams()
+        if not team_id_map:
+            print("Failed to get team mapping")
         
         # Get the schedule
-        response = requests.get(
-            'https://statsapi.mlb.com/api/v1/schedule',
-            params={
-                'sportId': 1,  # MLB
-                'date': date_str,
-                'fields': 'dates,games,gamePk,teams,home,away,team,name,score,status,detailedState,currentInning,gameDate,linescore,decisions'
-            }
-        )
+        print(f"Making API request to MLB Stats API for {date_str}")
+        url = 'https://statsapi.mlb.com/api/v1/schedule'
+        params = {
+            'sportId': 1,  # MLB
+            'date': date_str,
+            'fields': 'dates,games,gamePk,teams,home,away,team,name,score,status,detailedState,currentInning,gameDate,linescore,decisions'
+        }
+        print(f"Request URL: {url}")
+        print(f"Request params: {params}")
+        
+        response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
         
+        print(f"Response status code: {response.status_code}")
+        print(f"Raw response data preview: {str(data)[:500]}...")
+        
         games = []
         if 'dates' in data and len(data['dates']) > 0:
+            print(f"Found {len(data['dates'][0]['games'])} games")
             for game in data['dates'][0]['games']:
                 try:
                     # Get team names
@@ -187,6 +203,7 @@ def get_mlb_games(selected_date=None) -> List[Dict[str, Any]]:
                     
                     # Get game status
                     detailed_state = game['status'].get('detailedState', '')
+                    print(f"Game {home_team} vs {away_team} has status: {detailed_state}")
                     
                     # Get game time 
                     game_time = datetime.strptime(game['gameDate'], '%Y-%m-%dT%H:%M:%SZ')
