@@ -6,163 +6,200 @@ from datetime import datetime, timedelta
 
 def generate_team_stats(game):
     """
-    Generate mock advanced statistics for teams
+    Generate advanced statistics for MLB teams using real game data
     """
     try:
         stats = {
-            'possession': {
-                game['home_team']: random.randint(40, 60),
-                game['away_team']: None  # Will be calculated as complement
+            'hitting': {
+                game['home_team']: {
+                    'hits': 0,
+                    'runs': 0,
+                    'home_runs': 0,
+                    'strikeouts': 0,
+                    'walks': 0,
+                    'batting_avg': 0.0
+                },
+                game['away_team']: {
+                    'hits': 0,
+                    'runs': 0,
+                    'home_runs': 0,
+                    'strikeouts': 0,
+                    'walks': 0,
+                    'batting_avg': 0.0
+                }
             },
-            'shots': {
-                game['home_team']: random.randint(8, 20),
-                game['away_team']: random.randint(8, 20)
-            },
-            'shots_on_target': {
-                game['home_team']: random.randint(3, 10),
-                game['away_team']: random.randint(3, 10)
-            },
-            'pass_accuracy': {
-                game['home_team']: random.randint(70, 90),
-                game['away_team']: random.randint(70, 90)
+            'pitching': {
+                game['home_team']: {
+                    'strikeouts': 0,
+                    'walks': 0,
+                    'hits_allowed': 0,
+                    'earned_runs': 0,
+                    'era': 0.0
+                },
+                game['away_team']: {
+                    'strikeouts': 0,
+                    'walks': 0,
+                    'hits_allowed': 0,
+                    'earned_runs': 0,
+                    'era': 0.0
+                }
             }
         }
 
-        # Calculate complement for possession
-        stats['possession'][game['away_team']] = 100 - stats['possession'][game['home_team']]
+        # Extract stats from player_stats if available
+        if 'player_stats' in game:
+            for team_type in ['home', 'away']:
+                team_name = game['home_team'] if team_type == 'home' else game['away_team']
+                if team_name in game['player_stats']:
+                    for player in game['player_stats'][team_name]:
+                        # Hitting stats
+                        stats['hitting'][team_name]['hits'] += player.get('hits', 0)
+                        stats['hitting'][team_name]['runs'] += player.get('runs', 0)
+                        stats['hitting'][team_name]['home_runs'] += player.get('homeRuns', 0)
+                        stats['hitting'][team_name]['strikeouts'] += player.get('strikeouts', 0)
+                        stats['hitting'][team_name]['walks'] += player.get('walks', 0)
+                        
+                        # Pitching stats
+                        stats['pitching'][team_name]['strikeouts'] += player.get('strikeouts', 0)
+                        stats['pitching'][team_name]['walks'] += player.get('walks', 0)
+                        stats['pitching'][team_name]['hits_allowed'] += player.get('hits_allowed', 0)
+                        stats['pitching'][team_name]['earned_runs'] += player.get('earned_runs', 0)
 
         return stats
     except Exception as e:
         print(f"Error generating team stats: {str(e)}")
         return None
 
-def create_possession_chart(stats, home_team, away_team):
+def create_hitting_comparison(stats, home_team, away_team):
     """
-    Create a pie chart showing possession statistics
-    """
-    try:
-        fig = px.pie(
-            values=[stats['possession'][home_team], stats['possession'][away_team]],
-            names=[home_team, away_team],
-            title="Ball Possession (%)",
-            color_discrete_sequence=["#2ecc71", "#e74c3c"]
-        )
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        return fig
-    except Exception as e:
-        print(f"Error creating possession chart: {str(e)}")
-        return None
-
-def create_shots_comparison(stats, home_team, away_team):
-    """
-    Create a bar chart comparing shots and shots on target
+    Create a bar chart comparing hitting statistics
     """
     try:
-        categories = ['Total Shots', 'Shots on Target']
-
+        categories = ['Hits', 'Runs', 'Home Runs', 'Strikeouts', 'Walks']
+        
         fig = go.Figure(data=[
-            go.Bar(name=home_team, 
+            go.Bar(name=home_team,
                    x=categories,
-                   y=[stats['shots'][home_team], 
-                      stats['shots_on_target'][home_team]],
+                   y=[stats['hitting'][home_team]['hits'],
+                      stats['hitting'][home_team]['runs'],
+                      stats['hitting'][home_team]['home_runs'],
+                      stats['hitting'][home_team]['strikeouts'],
+                      stats['hitting'][home_team]['walks']],
                    marker_color='#2ecc71'),
-            go.Bar(name=away_team, 
+            go.Bar(name=away_team,
                    x=categories,
-                   y=[stats['shots'][away_team], 
-                      stats['shots_on_target'][away_team]],
+                   y=[stats['hitting'][away_team]['hits'],
+                      stats['hitting'][away_team]['runs'],
+                      stats['hitting'][away_team]['home_runs'],
+                      stats['hitting'][away_team]['strikeouts'],
+                      stats['hitting'][away_team]['walks']],
                    marker_color='#e74c3c')
         ])
 
         fig.update_layout(
-            title="Shot Analysis",
+            title="Hitting Statistics Comparison",
             barmode='group',
             xaxis_title="Metric",
             yaxis_title="Count"
         )
         return fig
     except Exception as e:
-        print(f"Error creating shots comparison: {str(e)}")
+        print(f"Error creating hitting comparison: {str(e)}")
+        return None
+
+def create_pitching_comparison(stats, home_team, away_team):
+    """
+    Create a bar chart comparing pitching statistics
+    """
+    try:
+        categories = ['Strikeouts', 'Walks', 'Hits Allowed', 'Earned Runs']
+        
+        fig = go.Figure(data=[
+            go.Bar(name=home_team,
+                   x=categories,
+                   y=[stats['pitching'][home_team]['strikeouts'],
+                      stats['pitching'][home_team]['walks'],
+                      stats['pitching'][home_team]['hits_allowed'],
+                      stats['pitching'][home_team]['earned_runs']],
+                   marker_color='#2ecc71'),
+            go.Bar(name=away_team,
+                   x=categories,
+                   y=[stats['pitching'][away_team]['strikeouts'],
+                      stats['pitching'][away_team]['walks'],
+                      stats['pitching'][away_team]['hits_allowed'],
+                      stats['pitching'][away_team]['earned_runs']],
+                   marker_color='#e74c3c')
+        ])
+
+        fig.update_layout(
+            title="Pitching Statistics Comparison",
+            barmode='group',
+            xaxis_title="Metric",
+            yaxis_title="Count"
+        )
+        return fig
+    except Exception as e:
+        print(f"Error creating pitching comparison: {str(e)}")
         return None
 
 def create_score_timeline(game):
     """
-    Create a line chart showing score progression
+    Create a line chart showing score progression by inning
     """
     try:
-        # Calculate time range for the game
-        current_time = datetime.now()
-        try:
-            game_time = datetime.strptime(game['time'], '%H:%M')
-            game_time = game_time.replace(
-                year=current_time.year,
-                month=current_time.month,
-                day=current_time.day
-            )
-        except ValueError:
-            # Fallback to current time if parsing fails
-            game_time = current_time - timedelta(minutes=90)
-
-        minutes = list(range(90))  # Fixed 90-minute range for consistency
-
+        # Calculate innings (assuming 9 innings for simplicity)
+        innings = list(range(1, 10))
+        
         # Initialize timeline data
         timeline_data = {
-            'minute': [0],
+            'inning': [0],
             f"{game['home_team']}_score": [0],
             f"{game['away_team']}_score": [0]
         }
 
+        # For now, we'll distribute the final score across innings
+        # In a real implementation, we'd use actual inning-by-inning data
         current_home = 0
         current_away = 0
-
-        # Generate random scoring events
-        for _ in range(game['home_score'] + game['away_score']):
-            minute = random.choice(minutes[1:])  # Exclude minute 0
-            if random.random() < 0.5 and current_home < game['home_score']:
+        
+        # Distribute runs across innings
+        for inning in innings:
+            if current_home < game['home_score']:
                 current_home += 1
-                timeline_data['minute'].append(minute)
+                timeline_data['inning'].append(inning)
                 timeline_data[f"{game['home_team']}_score"].append(current_home)
                 timeline_data[f"{game['away_team']}_score"].append(current_away)
-            elif current_away < game['away_score']:
+            
+            if current_away < game['away_score']:
                 current_away += 1
-                timeline_data['minute'].append(minute)
+                timeline_data['inning'].append(inning)
                 timeline_data[f"{game['home_team']}_score"].append(current_home)
                 timeline_data[f"{game['away_team']}_score"].append(current_away)
 
-        # Ensure final scores match
-        if timeline_data[f"{game['home_team']}_score"][-1] != game['home_score']:
-            timeline_data['minute'].append(89)
-            timeline_data[f"{game['home_team']}_score"].append(game['home_score'])
-            timeline_data[f"{game['away_team']}_score"].append(current_away)
-
-        if timeline_data[f"{game['away_team']}_score"][-1] != game['away_score']:
-            timeline_data['minute'].append(89)
-            timeline_data[f"{game['home_team']}_score"].append(game['home_score'])
-            timeline_data[f"{game['away_team']}_score"].append(game['away_score'])
-
-        # Convert to DataFrame and sort by minute
-        df = pd.DataFrame(timeline_data).sort_values('minute')
+        # Convert to DataFrame and sort by inning
+        df = pd.DataFrame(timeline_data).sort_values('inning')
 
         # Create the line chart
         fig = go.Figure()
 
         fig.add_trace(go.Scatter(
-            x=df['minute'],
+            x=df['inning'],
             y=df[f"{game['home_team']}_score"],
             name=game['home_team'],
             line=dict(color="#2ecc71", width=2)
         ))
 
         fig.add_trace(go.Scatter(
-            x=df['minute'],
+            x=df['inning'],
             y=df[f"{game['away_team']}_score"],
             name=game['away_team'],
             line=dict(color="#e74c3c", width=2)
         ))
 
         fig.update_layout(
-            title="Score Progression",
-            xaxis_title="Match Time (minutes)",
-            yaxis_title="Goals",
+            title="Score Progression by Inning",
+            xaxis_title="Inning",
+            yaxis_title="Runs",
             hovermode="x unified"
         )
 
@@ -171,28 +208,106 @@ def create_score_timeline(game):
         print(f"Error creating score timeline: {str(e)}")
         return None
 
-def create_pass_accuracy_gauge(team, accuracy):
+def create_box_score(game):
     """
-    Create a gauge chart showing pass accuracy
+    Create separate box score tables for hitting and pitching
     """
     try:
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = accuracy,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': f"{team} Pass Accuracy"},
-            gauge = {
-                'axis': {'range': [None, 100]},
-                'bar': {'color': "#3498db"},
-                'steps': [
-                    {'range': [0, 60], 'color': "#ff5733"},
-                    {'range': [60, 75], 'color': "#ffa33f"},
-                    {'range': [75, 100], 'color': "#33ff57"}
-                ]
-            }
-        ))
+        if 'player_stats' not in game:
+            return None, None, None, None
 
-        return fig
+        # Create DataFrames for each team
+        home_hitting = []
+        home_pitching = []
+        away_hitting = []
+        away_pitching = []
+
+        # Process home team
+        if game['home_team'] in game['player_stats']:
+            for player in game['player_stats'][game['home_team']]:
+                # Hitting stats
+                if any(player.get(stat, 0) > 0 for stat in ['hits', 'runs', 'rbi', 'homeRuns', 'walks']):
+                    home_hitting.append({
+                        'Name': player['name'],
+                        'H': player.get('hits', 0),
+                        'R': player.get('runs', 0),
+                        'RBI': player.get('rbi', 0),
+                        'HR': player.get('homeRuns', 0),
+                        'BB': player.get('walks', 0),
+                        'K': player.get('strikeouts', 0)
+                    })
+                
+                # Pitching stats
+                if any(player.get(stat, 0) > 0 for stat in ['strikeouts', 'walks', 'hits_allowed', 'earned_runs', 'innings_pitched']):
+                    home_pitching.append({
+                        'Name': player['name'],
+                        'IP': player.get('innings_pitched', '0.0'),
+                        'H': player.get('hits_allowed', 0),
+                        'R': player.get('earned_runs', 0),
+                        'ER': player.get('earned_runs', 0),
+                        'BB': player.get('walks', 0),
+                        'K': player.get('strikeouts', 0)
+                    })
+
+        # Process away team
+        if game['away_team'] in game['player_stats']:
+            for player in game['player_stats'][game['away_team']]:
+                # Hitting stats
+                if any(player.get(stat, 0) > 0 for stat in ['hits', 'runs', 'rbi', 'homeRuns', 'walks']):
+                    away_hitting.append({
+                        'Name': player['name'],
+                        'H': player.get('hits', 0),
+                        'R': player.get('runs', 0),
+                        'RBI': player.get('rbi', 0),
+                        'HR': player.get('homeRuns', 0),
+                        'BB': player.get('walks', 0),
+                        'K': player.get('strikeouts', 0)
+                    })
+                
+                # Pitching stats
+                if any(player.get(stat, 0) > 0 for stat in ['strikeouts', 'walks', 'hits_allowed', 'earned_runs', 'innings_pitched']):
+                    away_pitching.append({
+                        'Name': player['name'],
+                        'IP': player.get('innings_pitched', '0.0'),
+                        'H': player.get('hits_allowed', 0),
+                        'R': player.get('earned_runs', 0),
+                        'ER': player.get('earned_runs', 0),
+                        'BB': player.get('walks', 0),
+                        'K': player.get('strikeouts', 0)
+                    })
+
+        # Create DataFrames
+        home_hitting_df = pd.DataFrame(home_hitting)
+        home_pitching_df = pd.DataFrame(home_pitching)
+        away_hitting_df = pd.DataFrame(away_hitting)
+        away_pitching_df = pd.DataFrame(away_pitching)
+
+        # Add team totals for hitting
+        if not home_hitting_df.empty:
+            home_hitting_totals = {
+                'Name': 'TEAM TOTALS',
+                'H': home_hitting_df['H'].sum(),
+                'R': home_hitting_df['R'].sum(),
+                'RBI': home_hitting_df['RBI'].sum(),
+                'HR': home_hitting_df['HR'].sum(),
+                'BB': home_hitting_df['BB'].sum(),
+                'K': home_hitting_df['K'].sum()
+            }
+            home_hitting_df = pd.concat([home_hitting_df, pd.DataFrame([home_hitting_totals])], ignore_index=True)
+
+        if not away_hitting_df.empty:
+            away_hitting_totals = {
+                'Name': 'TEAM TOTALS',
+                'H': away_hitting_df['H'].sum(),
+                'R': away_hitting_df['R'].sum(),
+                'RBI': away_hitting_df['RBI'].sum(),
+                'HR': away_hitting_df['HR'].sum(),
+                'BB': away_hitting_df['BB'].sum(),
+                'K': away_hitting_df['K'].sum()
+            }
+            away_hitting_df = pd.concat([away_hitting_df, pd.DataFrame([away_hitting_totals])], ignore_index=True)
+
+        return home_hitting_df, home_pitching_df, away_hitting_df, away_pitching_df
     except Exception as e:
-        print(f"Error creating pass accuracy gauge: {str(e)}")
-        return None
+        print(f"Error creating box score: {str(e)}")
+        return None, None, None, None

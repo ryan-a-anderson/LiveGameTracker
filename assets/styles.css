@@ -3,6 +3,38 @@
     font-family: 'Inter', sans-serif;
 }
 
+/* Button styles */
+.stButton > button {
+    width: 100%;
+    background-color: #041e42;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+/* Game container styles */
+[data-testid="column"] > div {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: 100%;
+}
+
+/* Game details panel styles */
+.game-details-panel {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
 /* Score container styles */
 .score-container {
     display: flex;
@@ -41,6 +73,7 @@
     font-size: 0.9em;
     margin-right: 10px;
     color: white;
+    background-color: #041e42;
 }
 
 .league-NFL {
@@ -73,7 +106,6 @@
 .status-Live {
     background-color: rgba(231, 76, 60, 0.1);
     color: #e74c3c;
-    animation: pulse 2s infinite;
 }
 
 .status-Upcoming {
@@ -86,21 +118,26 @@
     color: #2ecc71;
 }
 
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
+/* Sidebar styles */
+.css-1d391kg {
+    background-color: #f8f9fa;
+    padding: 20px;
 }
 
-/* Button styles */
-.stButton button {
-    border-radius: 20px;
-    padding: 4px 15px;
-    font-weight: 500;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+.css-1d391kg .stMarkdown {
+    margin-bottom: 1rem;
 }
 
-/* Highlight video container */
+.css-1d391kg .stTabs [data-baseweb="tab-list"] {
+    gap: 1px;
+}
+
+.css-1d391kg .stTabs [data-baseweb="tab"] {
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+
+/* Highlight container styles */
 .highlight-container {
     border-left: 3px solid #e74c3c;
     padding: 15px;
@@ -112,6 +149,25 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    [data-testid="column"] > div {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .stButton > button {
+        padding: 6px 10px;
+        font-size: 0.9em;
+    }
+    
+    .game-details-panel {
+        padding: 1rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        padding: 6px 10px;
+        font-size: 0.8em;
+    }
+
     /* Game card adjustments */
     .score-container {
         flex-direction: column;
@@ -150,34 +206,23 @@
         height: auto !important;
         min-height: 250px;
     }
-
-    /* Tab adjustments */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 1px;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        padding: 8px 12px;
-        font-size: 0.9em;
-    }
-
-    /* Button adjustments */
-    .stButton button {
-        width: 100%;
-        margin: 5px 0;
-        padding: 8px 15px;
-        font-size: 1em;
-    }
-
-    /* Summary and highlights adjustments */
-    .highlight-container {
-        padding: 12px;
-        margin: 12px 0;
-    }
 }
 
-/* Additional mobile optimizations */
 @media (max-width: 480px) {
+    [data-testid="column"] > div {
+        padding: 8px;
+    }
+    
+    .league-badge {
+        font-size: 0.8em;
+        padding: 3px 8px;
+    }
+    
+    .status-indicator {
+        font-size: 0.7em;
+        padding: 3px 6px;
+    }
+
     .score-container {
         padding: 12px 8px;
     }
@@ -193,6 +238,11 @@
 
     .stTabs [data-baseweb="tab"] {
         padding: 6px 10px;
+        font-size: 0.8em;
+    }
+
+    .stButton > button {
+        padding: 5px 8px;
         font-size: 0.8em;
     }
 }
