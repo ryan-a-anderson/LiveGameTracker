@@ -9,7 +9,7 @@ import json
 # Load local modules
 from utils.sports_data import get_live_games, pre_cache_games, get_mlb_games
 from utils.stats import create_box_score, calculate_team_stats
-from utils.summary import generate_game_summary
+from utils.ai_summary import generate_game_summary
 
 # Load environment variables
 load_dotenv()

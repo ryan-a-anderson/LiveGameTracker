@@ -9,15 +9,19 @@ import redis
 import time
 
 # API Keys and endpoints
-MLB_API_KEY = os.getenv('MLB_API_KEY')
+MLB_API_KEY = os.getenv('MLB_API_KEY', '')  # Make API key optional with empty default
 
 # Initialize Redis connection (if REDIS_URL is set in environment)
 redis_client = None
-if 'REDIS_URL' in os.environ:
+if os.getenv('REDIS_URL'):
     try:
-        redis_client = redis.from_url(os.environ['REDIS_URL'])
+        redis_client = redis.from_url(os.getenv('REDIS_URL'))
+        print("Successfully connected to Redis")
     except Exception as e:
         print(f"Failed to connect to Redis: {e}")
+        print("Falling back to in-memory caching")
+else:
+    print("No REDIS_URL found. Using in-memory caching.")
 
 # Cache configuration
 CACHE_TTL = {

@@ -8,7 +8,7 @@ def generate_game_summary(game):
     print("\n=== Raw Game Data ===")
     print(game)
     
-    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
     model = genai.GenerativeModel('gemini-2.0-flash')
     
     # Prepare game data
