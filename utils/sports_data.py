@@ -1,6 +1,5 @@
 import random
 from datetime import datetime, timedelta
-from nba_api.live.nba.endpoints import scoreboard
 import json
 import os
 import requests
@@ -10,9 +9,7 @@ import redis
 import time
 
 # API Keys and endpoints
-FOOTBALL_DATA_API_KEY = os.getenv('FOOTBALL_DATA_API_KEY')
 MLB_API_KEY = os.getenv('MLB_API_KEY')
-NFL_API_KEY = os.getenv('NFL_API_KEY')
 
 # Initialize Redis connection (if REDIS_URL is set in environment)
 redis_client = None
@@ -116,13 +113,13 @@ def _get_team_stats(team_id: str) -> Dict:
     """Get team stats with LRU caching"""
     _rate_limit()
     try:
-        # Get current season stats
+        # Get 2025 season stats
         response = requests.get(
             f'https://statsapi.mlb.com/api/v1/teams/{team_id}/stats',
             params={
                 'stats': 'regularSeason',
                 'group': 'hitting,pitching',
-                'season': datetime.now().year
+                'season': 2025
             }
         )
         response.raise_for_status()
@@ -130,71 +127,6 @@ def _get_team_stats(team_id: str) -> Dict:
     except Exception as e:
         print(f"Error fetching team stats: {e}")
         return {}
-
-def get_nba_live_games() -> List[Dict[str, Any]]:
-    """
-    Fetch live NBA games using the NBA API
-    """
-    try:
-        # Get today's games
-        games_data = scoreboard.ScoreBoard()
-        games_json = json.loads(games_data.get_json())
-        nba_games = []
-
-        for game in games_json['scoreboard']['games']:
-            nba_games.append({
-                "id": game['gameId'],
-                "league": "NBA",
-                "home_team": f"{game['homeTeam']['teamCity']} {game['homeTeam']['teamName']}",
-                "away_team": f"{game['awayTeam']['teamCity']} {game['awayTeam']['teamName']}",
-                "home_score": game['homeTeam']['score'],
-                "away_score": game['awayTeam']['score'],
-                "time": game['gameStatusText'],
-                "status": "Live" if game['gameStatus'] == 2 else 
-                         "Finished" if game['gameStatus'] == 3 else "Upcoming",
-                "period": game.get('period', 0),
-                "game_clock": game.get('gameClock', ''),
-                "highlights": []  # We'll keep this empty for now as we don't have real highlights
-            })
-
-        return nba_games
-    except Exception as e:
-        print(f"Error fetching NBA games: {str(e)}")
-        return []
-
-def get_premier_league_games() -> List[Dict[str, Any]]:
-    """
-    Fetch Premier League games using the Football-Data.org API
-    """
-    try:
-        headers = {'X-Auth-Token': FOOTBALL_DATA_API_KEY}
-        response = requests.get(
-            'http://api.football-data.org/v4/competitions/PL/matches',
-            headers=headers
-        )
-        response.raise_for_status()
-        data = response.json()
-        
-        games = []
-        for match in data['matches']:
-            games.append({
-                "id": match['id'],
-                "league": "Premier League",
-                "home_team": match['homeTeam']['name'],
-                "away_team": match['awayTeam']['name'],
-                "home_score": match['score']['fullTime']['home'] if match['score']['fullTime']['home'] is not None else 0,
-                "away_score": match['score']['fullTime']['away'] if match['score']['fullTime']['away'] is not None else 0,
-                "time": match['utcDate'],
-                "status": "Live" if match['status'] == "IN_PROGRESS" else
-                         "Finished" if match['status'] == "FINISHED" else "Upcoming",
-                "period": match.get('minute', None),
-                "game_clock": f"{match.get('minute', 0)}'",
-                "highlights": []
-            })
-        return games
-    except Exception as e:
-        print(f"Error fetching Premier League games: {str(e)}")
-        return []
 
 def get_mlb_games(selected_date=None) -> List[Dict[str, Any]]:
     """
@@ -458,131 +390,24 @@ def get_mlb_games(selected_date=None) -> List[Dict[str, Any]]:
         print(f"Response content: {response.text if 'response' in locals() else 'No response'}")
         return []
 
-def get_nfl_games() -> List[Dict[str, Any]]:
+def get_live_games(status_filter: str, selected_date=None) -> List[Dict[str, Any]]:
     """
-    Fetch NFL games using the NFL API
-    """
-    try:
-        headers = {'Authorization': f'Bearer {NFL_API_KEY}'}
-        response = requests.get(
-            'https://api.nfl.com/v1/games',
-            headers=headers
-        )
-        response.raise_for_status()
-        data = response.json()
-        
-        games = []
-        for game in data['games']:
-            games.append({
-                "id": game['id'],
-                "league": "NFL",
-                "home_team": game['homeTeam']['abbr'],
-                "away_team": game['awayTeam']['abbr'],
-                "home_score": game['homeTeam']['score'],
-                "away_score": game['awayTeam']['score'],
-                "time": game['gameTime'],
-                "status": "Live" if game['gameStatus'] == "IN_PROGRESS" else
-                         "Finished" if game['gameStatus'] == "FINAL" else "Upcoming",
-                "period": game.get('quarter', None),
-                "game_clock": game.get('gameClock', ''),
-                "highlights": []
-            })
-        return games
-    except Exception as e:
-        print(f"Error fetching NFL games: {str(e)}")
-        return []
-
-def get_mock_games(leagues: List[str]) -> List[Dict[str, Any]]:
-    """
-    Generate mock games data for non-implemented leagues or when APIs fail
-    """
-    games = []
-
-    # Mock data for demonstration
-    teams = {
-        "MLB": [
-            ("New York Yankees", "Boston Red Sox"),
-            ("Los Angeles Dodgers", "San Francisco Giants"),
-            ("Chicago Cubs", "St. Louis Cardinals")
-        ]
-    }
-
-    # Mock highlight videos
-    highlight_videos = [
-        {
-            "title": "Amazing Play",
-            "timestamp": "12:34",
-            "thumbnail": "https://example.com/thumbnail1.jpg",
-            "description": "Incredible defensive save!"
-        },
-        {
-            "title": "Game-changing Moment",
-            "timestamp": "23:45",
-            "thumbnail": "https://example.com/thumbnail2.jpg",
-            "description": "Amazing scoring opportunity!"
-        }
-    ]
-
-    game_id = 1
-    for league in leagues:
-        if league != "MLB":  # Skip non-MLB leagues
-            continue
-
-        for home, away in teams.get(league, []):
-            # Generate random scores
-            home_score = random.randint(0, 5)
-            away_score = random.randint(0, 5)
-
-            # Generate random game time
-            current_time = datetime.now()
-            game_time = current_time - timedelta(minutes=random.randint(0, 90))
-
-            status = random.choice(["Live", "Upcoming", "Finished"])
-
-            games.append({
-                "id": game_id,
-                "league": league,
-                "home_team": home,
-                "away_team": away,
-                "home_score": home_score,
-                "away_score": away_score,
-                "time": game_time.strftime("%H:%M"),
-                "status": status,
-                "highlights": random.sample(highlight_videos, random.randint(1, 2))
-            })
-            game_id += 1
-
-    return games
-
-def get_live_games(selected_leagues: List[str], status_filter: str, selected_date=None) -> List[Dict[str, Any]]:
-    """
-    Combine real MLB data with mock data if API fails
+    Get MLB games with optional filtering
     
     Args:
-        selected_leagues: List of leagues to get games for
         status_filter: Filter for game status (All, Live, Upcoming, Finished)
         selected_date: Optional date to fetch games for (datetime object).
                       If None, uses today's date.
     """
-    games = []
-
-    # Get real MLB data if MLB is selected
-    if "MLB" in selected_leagues:
-        mlb_games = get_mlb_games(selected_date)
-        if status_filter != "All":
-            mlb_games = [g for g in mlb_games if g['status'] == status_filter]
-        games.extend(mlb_games)
-
-    # If we got no games from real API, fall back to mock data
-    if not games:
-        mock_games = get_mock_games(selected_leagues)
-        if status_filter != "All":
-            mock_games = [g for g in mock_games if g['status'] == status_filter]
-        games.extend(mock_games)
-
+    games = get_mlb_games(selected_date)
+    
+    # Filter by status if not "All"
+    if status_filter != "All":
+        games = [g for g in games if g['status'] == status_filter]
+    
     # Sort games by time
     games.sort(key=lambda x: x['time'])
-
+    
     return games
 
 def pre_cache_games():
@@ -591,17 +416,17 @@ def pre_cache_games():
     
     # Only cache yesterday's games if they're finished
     yesterday = today - timedelta(days=1)
-    get_live_games(["MLB"], "Finished", yesterday)
+    get_live_games("Finished", yesterday)
     
     # Cache today's games based on time of day
     current_hour = datetime.now().hour
     if current_hour < 12:  # Morning
-        get_live_games(["MLB"], "Upcoming", today)
+        get_live_games("Upcoming", today)
     elif current_hour < 20:  # Afternoon/Evening
-        get_live_games(["MLB"], "All", today)
+        get_live_games("All", today)
     else:  # Night
-        get_live_games(["MLB"], "Finished", today)
+        get_live_games("Finished", today)
     
     # Cache tomorrow's games
     tomorrow = today + timedelta(days=1)
-    get_live_games(["MLB"], "Upcoming", tomorrow)
+    get_live_games("Upcoming", tomorrow)
