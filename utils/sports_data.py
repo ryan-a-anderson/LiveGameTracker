@@ -37,6 +37,12 @@ RATE_LIMIT = {
     'min_interval': 2  # minimum seconds between requests
 }
 
+# Initialize cache variables
+_mlb_teams_cache = None
+_mlb_teams_cache_time = None
+_mlb_schedule_cache = {}  # Dictionary to store multiple days
+_mlb_schedule_cache_time = None
+_team_stats_cache = {}
 _last_request_time = 0
 
 def _rate_limit():
@@ -68,90 +74,60 @@ def _set_cached_data(key: str, data: Dict, ttl: int):
             print(f"Redis cache error: {e}")
 
 def _is_cache_valid(cache_time: datetime) -> bool:
-    """Check if the cache is still valid"""
-    if cache_time is None:
+    """Check if cache is still valid"""
+    if not cache_time:
         return False
-    return (datetime.now() - cache_time).total_seconds() < CACHE_DURATION
+    return (datetime.now() - cache_time).total_seconds() < CACHE_TTL['live_games']
 
-def _get_mlb_teams() -> Dict[str, int]:
-    """Get MLB teams with caching"""
+def _get_mlb_teams() -> Dict[str, str]:
+    """Get MLB team IDs with caching"""
     global _mlb_teams_cache, _mlb_teams_cache_time
     
-    if _is_cache_valid(_mlb_teams_cache_time):
+    # Check Redis cache first
+    redis_key = 'mlb_teams'
+    cached_data = _get_cached_data(redis_key)
+    if cached_data:
+        return cached_data
+    
+    # Check memory cache
+    if _mlb_teams_cache and _is_cache_valid(_mlb_teams_cache_time):
         return _mlb_teams_cache
     
     try:
-        teams_response = requests.get(
-            'https://statsapi.mlb.com/api/v1/teams',
-            params={
-                'sportId': 1,  # MLB
-                'fields': 'teams,id,name,abbreviation'
-            }
-        )
-        teams_response.raise_for_status()
-        teams_data = teams_response.json()
+        response = requests.get('https://statsapi.mlb.com/api/v1/teams', params={'sportId': 1})
+        response.raise_for_status()
+        data = response.json()
         
-        # Create a mapping of team names to IDs
-        team_id_map = {}
-        for team in teams_data['teams']:
-            team_id_map[team['name']] = team['id']
+        # Create team ID mapping
+        team_map = {team['name']: str(team['id']) for team in data['teams']}
         
-        _mlb_teams_cache = team_id_map
+        # Update both caches
+        _mlb_teams_cache = team_map
         _mlb_teams_cache_time = datetime.now()
-        return team_id_map
+        _set_cached_data(redis_key, team_map, CACHE_TTL['team_stats'])
+        
+        return team_map
     except Exception as e:
-        print(f"Error fetching MLB teams: {str(e)}")
+        print(f"Error fetching MLB teams: {e}")
         return {}
 
-def _get_team_stats(team_id: int) -> Dict[str, Any]:
-    """Get team stats with caching"""
-    if team_id in _team_stats_cache:
-        cache_data = _team_stats_cache[team_id]
-        if _is_cache_valid(cache_data['timestamp']):
-            return cache_data['data']
-    
+@lru_cache(maxsize=100)
+def _get_team_stats(team_id: str) -> Dict:
+    """Get team stats with LRU caching"""
+    _rate_limit()
     try:
-        stats = {}
-        # Get both 2024 and 2025 season stats
-        for season in ['2024', '2025']:
-            stats_response = requests.get(
-                'https://statsapi.mlb.com/api/v1/teams',
-                params={
-                    'teamIds': team_id,
-                    'hydrate': 'stats(group=hitting,pitching,regularSeason)',
-                    'season': season
-                }
-            )
-            stats_response.raise_for_status()
-            stats_data = stats_response.json()
-            
-            if 'teams' in stats_data and len(stats_data['teams']) > 0:
-                team = stats_data['teams'][0]
-                if 'stats' in team:
-                    for stat_group in team['stats']:
-                        if stat_group['group'] == 'hitting':
-                            stats[f'{season}_hitting'] = {
-                                'runs': stat_group['stats'].get('runs', 0),
-                                'hits': stat_group['stats'].get('hits', 0),
-                                'homeRuns': stat_group['stats'].get('homeRuns', 0),
-                                'battingAvg': stat_group['stats'].get('avg', '0.000')
-                            }
-                        elif stat_group['group'] == 'pitching':
-                            stats[f'{season}_pitching'] = {
-                                'era': stat_group['stats'].get('era', '0.00'),
-                                'wins': stat_group['stats'].get('wins', 0),
-                                'losses': stat_group['stats'].get('losses', 0),
-                                'strikeouts': stat_group['stats'].get('strikeOuts', 0)
-                            }
-        
-        _team_stats_cache[team_id] = {
-            'data': stats,
-            'timestamp': datetime.now()
-        }
-        return stats
+        response = requests.get(
+            f'https://statsapi.mlb.com/api/v1/teams/{team_id}/stats',
+            params={
+                'stats': 'regularSeason',
+                'group': 'hitting,pitching'
+            }
+        )
+        response.raise_for_status()
+        return response.json()
     except Exception as e:
-        print(f"Error fetching team stats for team {team_id}: {str(e)}")
-    return {}
+        print(f"Error fetching team stats: {e}")
+        return {}
 
 def get_nba_live_games() -> List[Dict[str, Any]]:
     """
