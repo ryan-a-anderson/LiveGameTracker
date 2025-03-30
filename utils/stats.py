@@ -311,3 +311,101 @@ def create_box_score(game):
     except Exception as e:
         print(f"Error creating box score: {str(e)}")
         return None, None, None, None
+
+def calculate_team_stats(game):
+    """
+    Calculate and format team statistics from the game data
+    Returns two dataframes: home_stats and away_stats
+    """
+    try:
+        # Check if we have team stats data
+        if 'team_stats' not in game or not game['team_stats']:
+            return None, None
+        
+        home_team = game['home_team']
+        away_team = game['away_team']
+        
+        # Initialize dictionaries for team stats
+        home_stats_dict = {}
+        away_stats_dict = {}
+        
+        # Extract stats from game data
+        for key, value in game['team_stats'].items():
+            if key.startswith(f"{home_team}_"):
+                stat_name = key.replace(f"{home_team}_", "")
+                home_stats_dict[stat_name] = value
+            elif key.startswith(f"{away_team}_"):
+                stat_name = key.replace(f"{away_team}_", "")
+                away_stats_dict[stat_name] = value
+        
+        # Process stats into dataframes
+        if home_stats_dict:
+            # Find hitting and pitching stats if they exist
+            hitting_stats = None
+            pitching_stats = None
+            
+            for key in home_stats_dict:
+                if isinstance(home_stats_dict[key], dict) and 'stats' in home_stats_dict[key]:
+                    for group in home_stats_dict[key]['stats']:
+                        if group['type']['displayName'] == 'hitting':
+                            hitting_stats = group['splits'][0]['stat'] if group['splits'] else None
+                        elif group['type']['displayName'] == 'pitching':
+                            pitching_stats = group['splits'][0]['stat'] if group['splits'] else None
+            
+            # Create dataframe for home team
+            home_data = []
+            
+            if hitting_stats:
+                home_data.append({"Category": "Batting Average", "Value": hitting_stats.get('avg', '0')})
+                home_data.append({"Category": "OPS", "Value": hitting_stats.get('ops', '0')})
+                home_data.append({"Category": "Runs", "Value": hitting_stats.get('runs', '0')})
+                home_data.append({"Category": "Home Runs", "Value": hitting_stats.get('homeRuns', '0')})
+                home_data.append({"Category": "RBI", "Value": hitting_stats.get('rbi', '0')})
+            
+            if pitching_stats:
+                home_data.append({"Category": "ERA", "Value": pitching_stats.get('era', '0')})
+                home_data.append({"Category": "WHIP", "Value": pitching_stats.get('whip', '0')})
+                home_data.append({"Category": "Strikeouts", "Value": pitching_stats.get('strikeOuts', '0')})
+                home_data.append({"Category": "Saves", "Value": pitching_stats.get('saves', '0')})
+            
+            home_stats_df = pd.DataFrame(home_data)
+        else:
+            home_stats_df = None
+        
+        if away_stats_dict:
+            # Find hitting and pitching stats if they exist
+            hitting_stats = None
+            pitching_stats = None
+            
+            for key in away_stats_dict:
+                if isinstance(away_stats_dict[key], dict) and 'stats' in away_stats_dict[key]:
+                    for group in away_stats_dict[key]['stats']:
+                        if group['type']['displayName'] == 'hitting':
+                            hitting_stats = group['splits'][0]['stat'] if group['splits'] else None
+                        elif group['type']['displayName'] == 'pitching':
+                            pitching_stats = group['splits'][0]['stat'] if group['splits'] else None
+            
+            # Create dataframe for away team
+            away_data = []
+            
+            if hitting_stats:
+                away_data.append({"Category": "Batting Average", "Value": hitting_stats.get('avg', '0')})
+                away_data.append({"Category": "OPS", "Value": hitting_stats.get('ops', '0')})
+                away_data.append({"Category": "Runs", "Value": hitting_stats.get('runs', '0')})
+                away_data.append({"Category": "Home Runs", "Value": hitting_stats.get('homeRuns', '0')})
+                away_data.append({"Category": "RBI", "Value": hitting_stats.get('rbi', '0')})
+            
+            if pitching_stats:
+                away_data.append({"Category": "ERA", "Value": pitching_stats.get('era', '0')})
+                away_data.append({"Category": "WHIP", "Value": pitching_stats.get('whip', '0')})
+                away_data.append({"Category": "Strikeouts", "Value": pitching_stats.get('strikeOuts', '0')})
+                away_data.append({"Category": "Saves", "Value": pitching_stats.get('saves', '0')})
+            
+            away_stats_df = pd.DataFrame(away_data)
+        else:
+            away_stats_df = None
+        
+        return home_stats_df, away_stats_df
+    except Exception as e:
+        print(f"Error calculating team stats: {str(e)}")
+        return None, None
