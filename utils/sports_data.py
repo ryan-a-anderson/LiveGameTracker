@@ -116,11 +116,13 @@ def _get_team_stats(team_id: str) -> Dict:
     """Get team stats with LRU caching"""
     _rate_limit()
     try:
+        # Get current season stats
         response = requests.get(
             f'https://statsapi.mlb.com/api/v1/teams/{team_id}/stats',
             params={
                 'stats': 'regularSeason',
-                'group': 'hitting,pitching'
+                'group': 'hitting,pitching',
+                'season': datetime.now().year
             }
         )
         response.raise_for_status()
