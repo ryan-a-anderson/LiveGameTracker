@@ -35,11 +35,14 @@ def display_game_details(game):
     
     with col2:
         if game['status'] == "Live":
-            st.subheader(f"{game['period']} {game['game_clock']}")
+            # Add prominent LIVE indicator
+            st.markdown(f"<h3 style='color:red; text-align:center'>🔴 LIVE</h3>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center'>{game['period']} {game['game_clock']}</p>", unsafe_allow_html=True)
         elif game['status'] == "Upcoming":
-            st.subheader(f"Today {game['time']}")
+            st.markdown(f"<h3 style='color:blue; text-align:center'>UPCOMING</h3>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center'>Today {game['time']}</p>", unsafe_allow_html=True)
         else:
-            st.subheader("Final")
+            st.markdown(f"<h3 style='text-align:center'>FINAL</h3>", unsafe_allow_html=True)
     
     with col3:
         st.subheader(f"{game['home_team']} - {game['home_score']}")
@@ -48,22 +51,28 @@ def display_game_details(game):
     tab1, tab2, tab3 = st.tabs(["Game Summary", "Box Score", "Team Stats"])
     
     with tab1:
-        # If the game is finished, generate a summary
-        if game['status'] == "Finished":
-            if st.button("Generate Summary", key=f"summary_{game['id']}"):
-                with st.spinner("Generating game summary..."):
+        # Generate summary for both finished and live games
+        if game['status'] in ["Finished", "Live"]:
+            summary_type = "Final Summary" if game['status'] == "Finished" else "Live Game Update"
+            if st.button(summary_type, key=f"summary_{game['id']}"):
+                with st.spinner(f"Generating {summary_type.lower()}..."):
                     summary = generate_game_summary(game)
                     st.markdown(summary)
                     
-                    # Show decisions if available
-                    if game.get('winning_pitcher') and game.get('losing_pitcher'):
+                    # Show decisions if available for finished games
+                    if game['status'] == "Finished" and game.get('winning_pitcher') and game.get('losing_pitcher'):
                         st.markdown("### Pitching Decisions")
                         st.markdown(f"**W**: {game['winning_pitcher']}")
                         st.markdown(f"**L**: {game['losing_pitcher']}")
                         if game.get('save_pitcher'):
                             st.markdown(f"**S**: {game['save_pitcher']}")
+        elif game['status'] == "Upcoming":
+            if st.button("Generate Preview", key=f"preview_{game['id']}"):
+                with st.spinner("Generating game preview..."):
+                    summary = generate_game_summary(game)
+                    st.markdown(summary)
         else:
-            st.info("Game summary will be available when the game is finished.")
+            st.info("Game summary will be available when the game starts.")
     
     with tab2:
         # Display box score if game is finished or in progress

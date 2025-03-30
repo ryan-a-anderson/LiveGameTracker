@@ -138,6 +138,29 @@ def generate_game_summary(game):
         
         Keep the summary concise and engaging.
         """
+    elif status == "Live":
+        prompt = f"""
+        Generate a concise update for this in-progress MLB game:
+        
+        Game: {away_team} @ {home_team}
+        Date: {date}
+        Current Score: {home_team} {home_score} - {away_score} {away_team}
+        Current Inning: {game.get('period', 'N/A')}
+        
+        Player Statistics So Far:
+        {player_stats_text}
+        
+        Key Moments:
+        {highlights_text}
+        
+        Please provide a mid-game update that includes:
+        1. Current game situation and how we got here
+        2. Standout performances so far (both hitting and pitching)
+        3. Key turning points or momentum shifts
+        4. What to watch for in the remaining innings
+        
+        Keep the summary concise but informative, focusing on the action so far.
+        """
     else:
         prompt = f"""
         Generate a concise summary for this MLB game:
